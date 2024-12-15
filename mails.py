@@ -11,9 +11,33 @@ load_dotenv()
 # Configuración
 IMAP_SERVER = os.getenv("IMAP_SERVER")
 
+
+def filtrar_correos_de_servicios(subject, sender, servicio):
+    """
+    Filtra los correos basados en el asunto y el remitente (servicio).
+    :param subject: Asunto del correo.
+    :param sender: Dirección del remitente.
+    :param servicio: Nombre del servicio (como Disney, Netflix, etc.).
+    :return: True si el correo cumple con los criterios, False en caso contrario.
+    """
+    # Palabras clave para identificar correos relacionados con códigos
+    palabras_clave = ["código", "verificación", "cambio de contraseña", "password", "reset"]
+
+    # Comprobamos si el remitente contiene el nombre del servicio
+    if servicio.lower() in sender.lower():
+        print(subject)
+        # Comprobamos si el asunto contiene alguna palabra clave
+        for palabra in palabras_clave:
+            if palabra.lower() in subject.lower():
+                return True
+    return False
+
+
+
+
 # Conectar al servidor IMAP
 
-def get_last_mails(email_address, password):
+def get_last_mails(email_address, password, service):
     try:
         # Conectar al servidor IMAP con SSL
         mail = imaplib.IMAP4_SSL(IMAP_SERVER)
@@ -76,12 +100,13 @@ def get_last_mails(email_address, password):
                             body += html.escape(html_body)  # Escapar para evitar inyección
 
                     # Construir el diccionario
-                    res[count] = {
-                        "Asunto": subject,
-                        "Emisor": sender,
-                        "Cuerpo": body,  # Texto plano
-                        "CuerpoHtml": html_body,  # HTML sin escapar
-                    }
+                    if filtrar_correos_de_servicios(subject, sender, service):
+                        res[count] = {
+                            "Asunto": subject,
+                            "Emisor": sender,
+                            "Cuerpo": body,  # Texto plano
+                            "CuerpoHtml": html_body,  # HTML sin escapar
+                        }
 
         mail.logout()
         return res

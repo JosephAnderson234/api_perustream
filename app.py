@@ -47,7 +47,8 @@ def return_message():
             }), 400
     pws = sql.obtener_contraseña(data["email"])
     
-    response = mails.get_last_mails(data["email"], pws)
+    response = mails.get_last_mails(data["email"], pws, data["service"])
+
     
     return json.dumps(response), 200
 
@@ -60,4 +61,4 @@ def validate_pwsd():
 
 # Iniciar el servidor
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
