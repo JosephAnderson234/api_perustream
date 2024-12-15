@@ -15,8 +15,8 @@ headers = {
     'Authorization': f'cpanel {os.getenv("USER_API")}:{os.getenv("TOKEN_API")}'
 }
 
-url1 = "https://peru4stream.com:2083/execute/Email/"
-url2 = "https://peru4stream.com:2083/execute/Mailboxes/"
+url1 = f"https://peru4stream.com:{os.getenv("PORT_API")}/execute/Email/"
+url2 = f"https://peru4stream.com:{os.getenv("PORT_API")}/execute/Mailboxes/"
 
 
 
