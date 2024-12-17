@@ -21,13 +21,14 @@ def filtrar_correos_de_servicios(subject, sender, servicio):
     :return: True si el correo cumple con los criterios, False en caso contrario.
     """
     # Palabras clave para identificar correos relacionados con códigos
-    palabras_clave = ["código", "verificación", "cambio de contraseña", "password", "reset"]
-
+    palabras_clave ={"netflix":[] , "max":[] , "disney":[] , "amazon":["intento de inicio de sesión"] }
+    if servicio == "prime":
+        servicio = "amazon"
     # Comprobamos si el remitente contiene el nombre del servicio
     if servicio.lower() in sender.lower():
         print(subject)
         # Comprobamos si el asunto contiene alguna palabra clave
-        for palabra in palabras_clave:
+        for palabra in palabras_clave[servicio]:
             if palabra.lower() in subject.lower():
                 return True
     return False
@@ -59,7 +60,7 @@ def get_last_mails(email_address, password, service):
         res = {}
 
         # Leer los 5 correos más recientes
-        for count, email_id in enumerate(email_ids[-5:], start=1):
+        for count, email_id in enumerate(email_ids[-2:], start=1):
             body = ""
             status, msg_data = mail.fetch(email_id, "(RFC822)")
 
