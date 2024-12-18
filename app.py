@@ -3,7 +3,7 @@ import sql, mails, json
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
-import re
+import re, time
 
 app = Flask(__name__)
 CORS(app)
@@ -43,8 +43,11 @@ def return_message():
     #response = requests.get(url2+'get_mailbox_status_list', headers=headers, data=data)
     if (not es_correo_alfanumerico(data["email"])):
         return json.dumps({
-            "Asunto": "Correo inválido"
+            "1": {
+                "Asunto": "Correo inválido"
+            }
             }), 400
+    time.sleep(3)
     pws = sql.obtener_contraseña(data["email"])
     
     response = mails.get_last_mails(data["email"], pws, data["service"])
