@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, abort
 import sql, mails, json
 from flask_cors import CORS
 import os
@@ -20,6 +20,14 @@ headers = {
     'Authorization': f'cpanel {os.getenv("USER_API")}:{os.getenv("TOKEN_API")}'
 }
 
+allowed_ips = os.getenv("ALLOWED_IPS")
+
+# Convertir la cadena en una lista
+if allowed_ips:
+    allowed_ips_list = allowed_ips.split(",")
+else:
+    allowed_ips_list = []
+
 url1 = f'https://peru4stream.com:{os.getenv("PORT_API")}/execute/Email/'
 url2 = f'https://peru4stream.com:{os.getenv("PORT_API")}/execute/Mailboxes/'
 
@@ -37,6 +45,59 @@ def create_mail():
     response = requests.get(url1+'add_pop', headers=headers, data=data)
     return response.json(), 200 """
 
+
+
+""" @app.before_request
+def limit_remote_addr():
+    if not request.remote_addr in allowed_ips_list:
+        abort(403) """
+
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    res = sql.probar_login(data["username"], data["password"])
+    if res:
+        return json.dumps({
+                "ok":"yes",
+                "data" : res
+            }), 200
+    else: 
+        return json.dumps({
+            "Error": "Credenciales inválidas"
+            }), 200
+
+@app.route('/getDashboard', methods=['POST'])
+def getDasboard():
+    #get the token from the request in the headers
+    token = request.headers.get('Authorization')
+    data = sql.validar_token(token)
+    if data:
+        return {
+            "ok": "yes",
+            "data":sql.obtener_data_dasboard()
+        }, 200
+    else:
+        return json.dumps({
+            "Error": "Token inválido"
+            }), 200
+
+@app.route('/getSellers', methods=['POST'])
+def getSellers():
+    #get the token from the request in the headers
+    token = request.headers.get('Authorization')
+    data = sql.validar_token(token)
+    if data:
+        return {
+            "ok": "yes",
+            "data":sql.obtener_data_vendedores()
+        }, 200
+    else:
+        return json.dumps({
+            "Error": "Token inválido"
+            }), 200
+
+
 @app.route('/return_messages', methods=['POST'])
 def return_message():
     data = request.get_json()
@@ -48,13 +109,24 @@ def return_message():
             }
             }), 400
     time.sleep(3)
+    if (not sql.validar_correo(data["email"])):
+        return json.dumps({
+            "1": {
+                "Asunto": "Correo no registrado"
+            }
+            }), 400
+    
+    if (not sql.validar_credenciales_vendedores(data["username"], data["cellphone"], data["email"], data["service"])):
+        return json.dumps({
+            "1": {
+                "Asunto": "Usuario inválido o no tienes acceso a este correo"
+            }
+            }), 400
     pws = sql.obtener_contraseña(data["email"])
     
     response = mails.get_last_mails(data["email"], pws, data["service"])
 
-    
     return json.dumps(response), 200
-
 """ 
 @app.route('/validate', methods=['GET'])
 def validate_pwsd():
@@ -64,4 +136,4 @@ def validate_pwsd():
 
 # Iniciar el servidor
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()

@@ -21,12 +21,12 @@ def filtrar_correos_de_servicios(subject, sender, servicio):
     :return: True si el correo cumple con los criterios, False en caso contrario.
     """
     # Palabras clave para identificar correos relacionados con códigos
-    palabras_clave ={"netflix":[] , "max":[] , "disney":[] , "amazon":["intento de inicio de sesión"] }
+    palabras_clave ={"netflix":[] , "max":[] , "disney":["código de acceso único para Disney+"] , "amazon":["intento de inicio de sesión"] }
     if servicio == "prime":
         servicio = "amazon"
     # Comprobamos si el remitente contiene el nombre del servicio
     if servicio.lower() in sender.lower():
-        print(subject)
+        #print(subject)
         # Comprobamos si el asunto contiene alguna palabra clave
         for palabra in palabras_clave[servicio]:
             if palabra.lower() in subject.lower():
