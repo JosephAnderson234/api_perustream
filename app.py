@@ -49,6 +49,7 @@ def home():
     except Exception as e:
         print(e)
         return json.dumps({
+            "xd":url1,
             "Error": f'{e}'
             }), 500
 
