@@ -33,7 +33,7 @@ url2 = f'https://peru4stream.com:{os.getenv("PORT_API")}/execute/Mailboxes/'
 
 
 
-""" # Ruta principal de la API
+# Ruta principal de la API
 @app.route('/get_mails', methods=['GET'])
 def home():
     response = requests.get(url1+'list_pops', headers=headers)
@@ -43,14 +43,15 @@ def home():
 def create_mail():
     data = request.get_json()
     response = requests.get(url1+'add_pop', headers=headers, data=data)
-    return response.json(), 200 """
+    return response.json(), 200
 
 
 
-""" @app.before_request
+@app.before_request
 def limit_remote_addr():
-    if not request.remote_addr in allowed_ips_list:
-        abort(403) """
+    print(request.remote_addr)
+    """if not request.remote_addr in allowed_ips_list:
+        abort(403)"""
 
 
 @app.route('/login', methods=['POST'])
@@ -75,7 +76,7 @@ def getDasboard():
     if data:
         return {
             "ok": "yes",
-            "data":sql.obtener_data_dasboard()
+            "data":sql.obtener_data_dashboard()
         }, 200
     else:
         return json.dumps({
@@ -127,6 +128,50 @@ def return_message():
     response = mails.get_last_mails(data["email"], pws, data["service"])
 
     return json.dumps(response), 200
+
+@app.route('/edit_expiration_date', methods=['POST'])
+def edit_expiration_date():
+    data = request.get_json()
+    #get the token from the request in the headers
+    token = request.headers.get('Authorization')
+    data_token = sql.validar_token(token)
+    if data_token:
+        sql.editar_fecha_de_vencimiento(data["id_cuenta"], data["date"])
+        return json.dumps({
+            "ok": "yes"
+        }), 200
+    else:
+        return json.dumps({
+            "Error": "Token inválido"
+            }), 200
+        
+@app.route('/setUpAnAccount', methods=['POST'])
+def asignar_vendedor():
+    data = request.get_json()
+    #get the token from the request in the headers
+    token = request.headers.get('Authorization')
+    data_token = sql.validar_token(token)
+    if data_token:
+        if data["tipo"] != "completa":
+            sql.asginar_cuenta_perfil_a_vendedor(data["id_cuenta"], data["date"], data["id_vendedor"], data["numero_cuenta"])
+        else:
+            sql.asginar_cuenta_completa_a_vendedor(data["id_cuenta"], data["id_vendedor"], data["date"])
+        return json.dumps({
+            "ok": "yes"
+        }), 200
+    else:
+        return json.dumps({
+            "Error": "Token inválido"
+            }), 200
+
+
+@app.route('/updateToken', methods=['POST'])
+def updateToken():
+    
+    sql.actualizar_tokens_vendedores()
+    
+    return json.dumps({
+        'ok':'yes'}), 200
 """ 
 @app.route('/validate', methods=['GET'])
 def validate_pwsd():
@@ -136,4 +181,4 @@ def validate_pwsd():
 
 # Iniciar el servidor
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
