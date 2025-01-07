@@ -34,12 +34,20 @@ url2 = f'https://peru4stream.com:{os.getenv("PORT_API")}/execute/Mailboxes/'
 
 
 # Ruta principal de la API
+
+@app.route('/', methods=['GET'])
+def index():
+    return jsonify({
+        "message": "API de correos"
+    })
+
 @app.route('/get_mails', methods=['GET'])
 def home():
     try: 
         response = requests.get(url1+'list_pops', headers=headers)
         return response.json(), 200
     except Exception as e:
+        print(e)
         return json.dumps({
             "Error": e
             }), 500
