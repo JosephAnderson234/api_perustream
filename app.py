@@ -167,13 +167,18 @@ def asignar_vendedor():
     token = request.headers.get('Authorization')
     data_token = sql.validar_token(token)
     if data_token:
-        if data["tipo"] != "completa":
-            sql.asginar_cuenta_perfil_a_vendedor(data["id_cuenta"], data["date"], data["id_vendedor"], data["numero_cuenta"])
-        else:
-            sql.asginar_cuenta_completa_a_vendedor(data["id_cuenta"], data["id_vendedor"], data["date"])
-        return json.dumps({
-            "ok": "yes"
-        }), 200
+        try:
+            if data["tipo"] != "completa":
+                sql.asginar_cuenta_perfil_a_vendedor(data["id_cuenta"],  data["id_vendedor"], data["date"], data["numero_cuenta"])
+            else:
+                sql.asginar_cuenta_completa_a_vendedor(data["id_cuenta"], data["id_vendedor"], data["date"])
+            return json.dumps({
+                "ok": "yes"
+            }), 200
+        except Exception as e:
+            return json.dumps({
+                "Error": 'Backend Error'
+            }), 400
     else:
         return json.dumps({
             "Error": "Token inválido"

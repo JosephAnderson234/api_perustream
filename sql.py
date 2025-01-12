@@ -54,12 +54,21 @@ def validar_credenciales_vendedores(nombre, celular, correo, service):
         consulta_servicio = """
             SELECT id_cuenta 
             FROM cuentas_servicios 
-            WHERE correo = %s AND id_vendedor = %s AND servicio = %s;
+            WHERE correo = %s AND servicio = %s;
         """
         id_cuenta = ejecutar_consulta(
-            consulta_servicio, (correo, id_vendedor[0], service), fetchone=True
+            consulta_servicio, (correo, service), fetchone=True
         )
-        if id_cuenta:
+        
+        consulta_validar_relacion = """
+            SELECT id_cuenta
+            FROM perfiles
+            WHERE id_vendedor = %s AND id_cuenta = %s;
+        """
+        
+        id_validada = ejecutar_consulta(consulta_validar_relacion, (id_vendedor[0], id_cuenta[0]), fetchone=True)
+        
+        if id_validada:
             fecha_actual = datetime.date.today()
             print(
                 f"{fecha_actual} - El vendedor {nombre} accedió a la bandeja del correo {correo} en el servicio {service}"
@@ -80,7 +89,27 @@ def validar_correo(email):
 
 
 def obtener_data_dashboard():
-    consulta_sql = "SELECT * FROM cuentas_servicios;"
+    consulta_sql = """
+    SELECT 
+        cs.id_cuenta,
+        cs.correo,
+        cs.contra,
+        p.id_vendedor,
+        p.fecha_vencimiento,
+        cs.servicio,
+        cs.tipo,
+        p.numero_perfil
+    FROM 
+        cuentas_servicios cs
+    LEFT JOIN 
+        perfiles p ON cs.id_cuenta = p.id_cuenta
+    WHERE 
+        (cs.tipo = 'completa' AND p.numero_perfil = 1)
+        OR 
+        (cs.tipo = 'perfil')
+    ORDER BY 
+        cs.id_cuenta, p.numero_perfil;
+    """
     return ejecutar_consulta(consulta_sql)
 
 
@@ -95,7 +124,7 @@ def obtener_data_vendedores():
                             id_vendedor, 
                             COUNT(*) AS veces_aparece
                         FROM 
-                            cuentas_servicios
+                            perfiles
                         WHERE 
                             fecha_vencimiento > CURRENT_DATE -- Validar que la fecha de vencimiento no haya pasado
                         GROUP BY 
@@ -124,20 +153,21 @@ def editar_fecha_de_vencimiento(id_cuenta, fecha):
 
 def asginar_cuenta_completa_a_vendedor(id_cuenta, id_vendedor, fecha_vencimiento):
     consulta_sql = """
-        UPDATE cuentas_servicios
-        SET id_vendedor = %s , fecha_vencimiento = %s, tipo='completa', perfil = 0
-        WHERE id_cuenta = %s;
+        UPDATE perfiles
+        SET id_vendedor = %s , fecha_vencimiento = %s
+        WHERE id_cuenta = %s AND numero_perfil = 1;
     """
-    print(ejecutar_consulta(consulta_sql, (int(id_vendedor), fecha_vencimiento, int(id_cuenta))))
+    return ejecutar_consulta(consulta_sql, (int(id_vendedor), fecha_vencimiento, int(id_cuenta)))
 
 
 def asginar_cuenta_perfil_a_vendedor(id_cuenta, id_vendedor, fecha_vencimiento, perfil):
+
     consulta_sql = """
-        UPDATE cuentas_servicios
-        SET id_vendedor = %s , fecha_vencimiento = %s, tipo='perfil', perfil = %s
-        WHERE id_cuenta = %s;
+        UPDATE perfiles
+        SET id_vendedor = %s , fecha_vencimiento = %s
+        WHERE id_cuenta = %s AND numero_perfil = %s;
     """
-    return ejecutar_consulta(consulta_sql, (id_vendedor, fecha_vencimiento, perfil, id_cuenta))
+    return ejecutar_consulta(consulta_sql, (int(id_vendedor), fecha_vencimiento, id_cuenta, perfil))
 
 def actualizar_tokens_vendedores():
     consulta_sql = """
