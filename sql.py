@@ -81,6 +81,12 @@ def validar_token(token):
     consulta_sql = "SELECT id_vendedor, token FROM vendedores WHERE token = %s;"
     return ejecutar_consulta(consulta_sql, (token,), fetchone=True)
 
+def validar_admin(token):
+    consulta_sql = "SELECT id_vendedor, token FROM vendedores WHERE token = %s AND tipo_cuenta = 'admin'"
+    id_admin = ejecutar_consulta(consulta_sql, (token,), fetchone=True)
+    if id_admin:
+        return True
+    return False
 
 def validar_correo(email):
     consulta_sql = "SELECT correo FROM cuentas WHERE correo = %s;"
@@ -88,7 +94,7 @@ def validar_correo(email):
     return bool(resultado)
 
 
-def obtener_data_dashboard():
+def obtener_data_dashboard(id=0):
     consulta_sql = """
     SELECT 
         cs.id_cuenta,
@@ -110,7 +116,33 @@ def obtener_data_dashboard():
     ORDER BY 
         cs.id_cuenta, p.numero_perfil;
     """
-    return ejecutar_consulta(consulta_sql)
+    if id==0:
+        return ejecutar_consulta(consulta_sql)
+    else:
+        consulta_sql = f"""
+        SELECT 
+            cs.id_cuenta,
+            cs.correo,
+            cs.contra,
+            p.id_vendedor,
+            p.fecha_vencimiento,
+            cs.servicio,
+            cs.tipo,
+            p.numero_perfil
+        FROM 
+            cuentas_servicios cs
+        LEFT JOIN 
+            perfiles p ON cs.id_cuenta = p.id_cuenta
+        WHERE 
+            (cs.tipo = 'completa' AND p.numero_perfil = 1)
+            OR 
+            (cs.tipo = 'perfil')
+            AND
+            p.id_vendedor = {id}
+        ORDER BY 
+            cs.id_cuenta, p.numero_perfil;
+        """
+        return ejecutar_consulta(consulta_sql)
 
 
 def obtener_data_vendedores():
@@ -142,6 +174,23 @@ def probar_login(usuario, contraseña):
     """
     return ejecutar_consulta(consulta_sql, (usuario, contraseña), fetchone=True)
 
+
+def agregar_servicio(email, password, type_account, service, id_vendedor, perfil, fecha_vencimiento):
+    consulta_generar_correo = """
+    INSERT INTO cuentas_servicios (correo, contra, tipo, servicio) VALUES (%s, %s, %s, %s);
+    """
+    ejecutar_consulta(consulta_generar_correo, (email, password, type_account, service));
+    
+    consulta_obtener_id_cuenta = """
+    SELECT id_cuenta FROM cuentas_servicios WHERE correo = %s AND contra = %s AND tipo = %s AND servicio = %s;
+    """
+    id_new_account = ejecutar_consulta(consulta_obtener_id_cuenta, (email, password, type_account, service), fetchone=True)
+    
+    consulta_generar_perfil = """
+    INSERT INTO perfiles (id_cuenta, id_vendedor, numero_perfil, fecha_vencimiento) VALUES (%s, %s, %s, %s);
+    """
+    
+    return ejecutar_consulta(consulta_generar_perfil, (id_new_account[0], id_vendedor, perfil, fecha_vencimiento))
 
 def editar_fecha_de_vencimiento(id_cuenta, fecha):
     consulta_sql = """

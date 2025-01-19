@@ -22,6 +22,8 @@ def filtrar_correos_de_servicios(subject, sender, servicio):
     """
     # Palabras clave para identificar correos relacionados con códigos
     palabras_clave ={"netflix":[] , "max":[] , "disney":["código de acceso único para Disney+"] , "amazon":["intento de inicio de sesión"] }
+    
+    #print(subject, sender, servicio)
     if servicio == "prime":
         servicio = "amazon"
     # Comprobamos si el remitente contiene el nombre del servicio
@@ -60,7 +62,7 @@ def get_last_mails(email_address, password, service):
         res = {}
 
         # Leer los 5 correos más recientes
-        for count, email_id in enumerate(email_ids[-2:], start=1):
+        for count, email_id in enumerate(email_ids[-3:], start=1):
             body = ""
             status, msg_data = mail.fetch(email_id, "(RFC822)")
 

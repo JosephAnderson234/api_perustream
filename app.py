@@ -62,11 +62,11 @@ def create_mail():
 
 
 
-@app.before_request
+"""@app.before_request
 def limit_remote_addr():
-    print(request.remote_addr)
-    """if not request.remote_addr in allowed_ips_list:
-        abort(403)"""
+    print(request.remote_addr)"""
+"""if not request.remote_addr in allowed_ips_list:
+    abort(403)"""
 
 
 @app.route('/login', methods=['POST'])
@@ -89,10 +89,19 @@ def getDasboard():
     token = request.headers.get('Authorization')
     data = sql.validar_token(token)
     if data:
-        return {
-            "ok": "yes",
-            "data":sql.obtener_data_dashboard()
-        }, 200
+        
+        isAdmin = sql.validar_admin(token)
+        
+        if isAdmin:
+            return {
+                "ok": "yes",
+                "data":sql.obtener_data_dashboard()
+            }, 200
+        else:
+            return json.dumps({
+                "ok": "yes",
+                "data":sql.obtener_data_dashboard(data[0])
+                }), 200
     else:
         return json.dumps({
             "Error": "Token inválido"
@@ -103,16 +112,40 @@ def getSellers():
     #get the token from the request in the headers
     token = request.headers.get('Authorization')
     data = sql.validar_token(token)
+    
+    
     if data:
-        return {
-            "ok": "yes",
-            "data":sql.obtener_data_vendedores()
-        }, 200
+        
+        isAdmin = sql.validar_admin(token)
+        if isAdmin:
+            return {
+                "ok": "yes",
+                "data":sql.obtener_data_vendedores()
+            }, 200
+        else:
+            return json.dumps({
+                "Error": "No tienes permisos para acceder a esta información"
+                }), 200
     else:
         return json.dumps({
             "Error": "Token inválido"
             }), 200
 
+@app.route('/create_service', methods=['POST'])
+def addService():
+    data = request.get_json()
+    #get the token from the request in the headers
+    token = request.headers.get('Authorization')
+    data_token = sql.validar_token(token)
+    if data_token:
+        sql.agregar_servicio(data["email"], data["password"], data["type"], data["service"], data["id_vendedor"], data["perfil"], data["fecha_vencimiento"])
+        return json.dumps({
+            "ok": "yes"
+        }), 200
+    else:
+        return json.dumps({
+            "Error": "Token inválido"
+            }), 200
 
 @app.route('/return_messages', methods=['POST'])
 def return_message():
@@ -132,14 +165,15 @@ def return_message():
             }
             }), 400
     
-    if (not sql.validar_credenciales_vendedores(data["username"], data["cellphone"], data["email"], data["service"])):
+    """ if (not sql.validar_credenciales_vendedores(data["username"], data["cellphone"], data["email"], data["service"])):
         return json.dumps({
             "1": {
                 "Asunto": "Usuario inválido o no tienes acceso a este correo"
             }
-            }), 400
-    pws = sql.obtener_contraseña(data["email"])
+            }), 400 """
     
+    pws = sql.obtener_contraseña(data["email"])
+    #print(pws)
     response = mails.get_last_mails(data["email"], pws, data["service"])
 
     return json.dumps(response), 200
